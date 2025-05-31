@@ -7,5 +7,7 @@ edition = "2021"
 
 [features]
 udp-networking = []
+sim-networking = []
 host = []
 default = ["udp-networking"]
+test = ["sim-networking"]

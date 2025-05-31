@@ -2,10 +2,23 @@ use std::{str, sync::*, thread};
 
 //Imports based on network type selection
 #[cfg(feature = "udp-networking")]
-use crate::default_network_interface::*;
+use crate::udp_network_interface::*;
+
+#[cfg(feature = "sim-networking")]
+use crate::test_network_interface::*;
+
 
 const HOST: bool = cfg!(feature = "host");
 
+#[cfg(test)]
+pub struct Connection<'a> {
+    pub socket: Arc<Socket>,
+    pub data: Arc<Vec<u8>>,
+    pub addr: &'a str,
+    pub port: u16,
+}
+
+#[cfg(not(test))]
 pub struct Connection<'a> {
     socket: Arc<Socket>,
     data: Arc<Vec<u8>>,
@@ -36,7 +49,7 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
             {
                 let mut init_buf: Vec<u8> = Vec::new();
                 init_buf.resize(32, 0);
-                let (_amt, _src) = recv_from(&socket_stable, &mut init_buf);
+                recv(&socket_stable, &mut init_buf);
 
                 let msg = str::from_utf8(&init_buf).unwrap();
 
@@ -50,7 +63,7 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
                 {
                     let mut temp_buf: Vec<u8> = Vec::new();
                     temp_buf.resize(if (size - total_size) > 65500{65500} else {(size-total_size) as usize}, 0);
-                    let (_amt, _src) = recv_from(&socket_stable, &mut temp_buf);
+                    recv(&socket_stable, &mut temp_buf);
                     total_size += if (size - total_size) > 65500{65500} else {size-total_size};
                     data_buf.append(&mut temp_buf);
                 }
@@ -67,8 +80,8 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
     return Connection {socket: socket_stable, data: data_stable, addr: addr, port: port};
 }
 
-pub fn send(connection: &Connection, addr: &str) -> bool {
-    return send_to(&connection.socket, "0110", addr, connection.port);
+pub fn send(connection: &Connection, addr: &str, msg: &str) -> bool {
+    return send_to(&connection.socket, msg, addr, connection.port);
 }
 
 pub fn recieve(connection: &Connection) -> String{
