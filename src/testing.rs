@@ -23,7 +23,7 @@ mod tests {
     #[test]
     fn checkNetworkSend() {
         let connection: network_manager::Connection<'_> = network_manager::connect("192.168.1.2", 8080);
-        network_manager::send(&connection, "192.168.1.2:8080", "TEST");
+        network_manager::send(&connection, "192.168.1.2:8080", "TEST", &[]);
     }
 
     #[test]

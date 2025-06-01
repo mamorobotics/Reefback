@@ -1,4 +1,4 @@
-use std::{str, sync::*, thread};
+use std::{str, sync::*, thread, iter::repeat};
 
 //Imports based on network type selection
 #[cfg(feature = "udp-networking")]
@@ -6,7 +6,6 @@ use crate::udp_network_interface::*;
 
 #[cfg(feature = "sim-networking")]
 use crate::test_network_interface::*;
-
 
 const HOST: bool = cfg!(feature = "host");
 
@@ -53,7 +52,7 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
 
                 let msg = str::from_utf8(&init_buf).unwrap();
 
-                let size = &msg[..msg.rfind("!").unwrap()].parse::<i32>().unwrap(); 
+                let size = &msg[..msg.rfind("!").unwrap()].parse::<i32>().expect("Size Value Not Found");
                 let headers = &msg[msg.rfind("!").unwrap()..];
 
                 let mut data_buf: Vec<u8> = Vec::new();
@@ -80,8 +79,13 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
     return Connection {socket: socket_stable, data: data_stable, addr: addr, port: port};
 }
 
-pub fn send(connection: &Connection, addr: &str, msg: &str) -> bool {
-    return send_to(&connection.socket, msg, addr, connection.port);
+pub fn send(connection: &Connection, addr: &str, msg: &str, headers: &[&str]) -> bool {
+    let mut pre_msg: String = msg.len().to_string() + "!" + &headers.join("?");
+    let pre_length = pre_msg.len();
+    pre_msg = pre_msg + &repeat(" ").take(32-pre_length).collect::<String>();
+    let pre_check: bool = send_to(&connection.socket, &pre_msg, addr, connection.port);
+    let msg_check: bool = send_to(&connection.socket, msg, addr, connection.port);
+    return pre_check && msg_check;
 }
 
 pub fn recieve(connection: &Connection) -> String{

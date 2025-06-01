@@ -14,7 +14,7 @@ pub fn send_to(socket: &Socket, msg: &str, addr: &str, port: u16) -> bool {
 }
 
 pub fn recv(socket: &Socket, buf: &mut Vec<u8>) {
-    let msg: Vec<u8> = "!TEST PAYLOAD!".as_bytes().to_vec();
+    let msg: Vec<u8> = "32!".as_bytes().to_vec();
     buf.clear();
     buf.extend_from_slice(&msg);
 }
