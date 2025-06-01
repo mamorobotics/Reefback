@@ -3,9 +3,15 @@ use std::{str, sync::*, thread, iter::repeat};
 //Imports based on network type selection
 #[cfg(feature = "udp-networking")]
 use crate::udp_network_interface::*;
+    
+#[cfg(feature = "udp-networking")]
+static MAX_LEN: usize = 65500;
 
 #[cfg(feature = "sim-networking")]
 use crate::test_network_interface::*;
+
+#[cfg(feature = "sim-networking")]
+static MAX_LEN: usize = i32::MAX;
 
 const HOST: bool = cfg!(feature = "host");
 
@@ -52,18 +58,18 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
 
                 let msg = str::from_utf8(&init_buf).unwrap();
 
-                let size = &msg[..msg.rfind("!").unwrap()].parse::<i32>().expect("Size Value Not Found");
+                let size: &i32 = &msg[..msg.rfind("!").unwrap()].parse::<i32>().expect("Size Value Not Found");
                 let headers = &msg[msg.rfind("!").unwrap()..];
 
                 let mut data_buf: Vec<u8> = Vec::new();
 
-                let mut total_size = 0;
+                let mut total_size: i32 = 0;
                 while total_size < size-1
                 {
                     let mut temp_buf: Vec<u8> = Vec::new();
-                    temp_buf.resize(if (size - total_size) > 65500{65500} else {(size-total_size) as usize}, 0);
+                    temp_buf.resize(if (size - total_size) > (MAX_LEN as i32) {MAX_LEN} else {(size-total_size) as usize}, 0);
                     recv(&socket_stable, &mut temp_buf);
-                    total_size += if (size - total_size) > 65500{65500} else {size-total_size};
+                    total_size += if (size - total_size) > (MAX_LEN as i32) {MAX_LEN as i32} else {size-total_size};
                     data_buf.append(&mut temp_buf);
                 }
 
@@ -84,7 +90,18 @@ pub fn send(connection: &Connection, addr: &str, msg: &str, headers: &[&str]) ->
     let pre_length = pre_msg.len();
     pre_msg = pre_msg + &repeat(" ").take(32-pre_length).collect::<String>();
     let pre_check: bool = send_to(&connection.socket, &pre_msg, addr, connection.port);
-    let msg_check: bool = send_to(&connection.socket, msg, addr, connection.port);
+
+    let mut sent = true;
+    let mut msg_data: String = (*msg).to_string();
+    while msg_data.len() > MAX_LEN {
+        let temp = msg_data[..MAX_LEN].to_string();
+        msg_data = msg_data[MAX_LEN..].to_string();
+        sent &= send_to(&connection.socket, &temp, addr, connection.port)
+    } if msg_data.len() != 0 {
+        sent &= send_to(&connection.socket, &msg_data, addr, connection.port)
+    }
+
+    let msg_check: bool = sent;
     return pre_check && msg_check;
 }
 
