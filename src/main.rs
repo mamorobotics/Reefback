@@ -1,6 +1,4 @@
 mod network_manager;
-mod testing;
-
 #[cfg(feature = "udp-networking")]
 mod udp_network_interface;
 
@@ -8,5 +6,5 @@ mod udp_network_interface;
 mod test_network_interface;
 
 fn main() {
-    let connection: network_manager::Connection<'_> = network_manager::connect("192.168.1.2", 8080);
+    let _connection = network_manager::connect("192.168.1.2", 8080);
 }
