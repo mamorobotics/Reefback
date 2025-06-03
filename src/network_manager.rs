@@ -65,7 +65,6 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
             let data: Vec<u8> = data_buf;
 
             for head in (*headers).split("?"){
-                println!("{}", head);
                 let header_value = head.parse::<usize>().unwrap();
                 FUNCT_MAP.lock().unwrap()[header_value](str::from_utf8(&data).unwrap());
             }
