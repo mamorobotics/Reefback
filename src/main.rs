@@ -1,5 +1,5 @@
-mod network_manager;
 mod network_interfaces;
+mod network_manager;
 
 fn main() {
     //Create a connection
@@ -9,7 +9,5 @@ fn main() {
     network_manager::send(&connection, "192.168.1.1", "Hello", &[]);
 
     //Register a function to handle recieved data
-    network_manager::register_recieve_command(0, |data: &str| {
-        println!("{}", data)
-    });
+    network_manager::register_recieve_command(0, |data: &str| println!("{}", data));
 }

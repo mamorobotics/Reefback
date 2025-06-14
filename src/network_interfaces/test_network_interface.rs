@@ -4,7 +4,9 @@ pub struct Socket {
 }
 
 pub fn bind_to_address(addr: &str) -> Socket {
-    return Socket{addr: addr.to_owned()};
+    return Socket {
+        addr: addr.to_owned(),
+    };
 }
 
 pub fn send_to(_socket: &Socket, msg: &str, _addr: &str, _port: u16) -> bool {
