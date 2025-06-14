@@ -88,6 +88,11 @@ pub fn connect(addr: &str, port: u16) -> Connection{
 }
 
 pub fn send(connection: &Connection, addr: &str, msg: &str, headers: &[&str]) -> bool {
+    if !CONNECTED_ADDRS.lock().unwrap().contains(&(msg.to_owned()))
+    {
+        return false;
+    }
+
     let mut pre_msg: String = msg.len().to_string() + "!" + &headers.join("?");
     let pre_length = pre_msg.len();
     pre_msg = pre_msg + &repeat(" ").take(32-pre_length).collect::<String>();
