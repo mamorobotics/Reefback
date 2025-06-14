@@ -1,14 +1,14 @@
-use std::{iter::repeat, str, sync::*, thread};
+use std::{iter::repeat, str, sync::{Arc, Mutex}, thread};
 
 //Imports based on network type selection
 #[cfg(feature = "udp-networking")]
-use crate::udp_network_interface::*;
+use crate::network_interfaces::udp_network_interface::*;
     
 #[cfg(feature = "udp-networking")]
 static MAX_LEN: usize = 65500;
 
 #[cfg(feature = "sim-networking")]
-use crate::test_network_interface::*;
+use crate::network_interfaces::test_network_interface::*;
 
 #[cfg(feature = "sim-networking")]
 static MAX_LEN: usize = i32::MAX as usize;

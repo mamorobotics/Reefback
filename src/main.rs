@@ -1,10 +1,5 @@
 mod network_manager;
-
-#[cfg(feature = "udp-networking")]
-mod udp_network_interface;
-
-#[cfg(feature = "sim-networking")]
-mod test_network_interface;
+mod network_interfaces;
 
 fn main() {
     //Create a connection
