@@ -16,6 +16,7 @@ static MAX_LEN: usize = i32::MAX as usize;
 const HOST: bool = cfg!(feature = "host");
 
 static FUNCT_MAP: Mutex<Vec<fn(&str)>> = Mutex::new(Vec::new());
+static CONNECTED_ADDRS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
 pub struct Connection<'a> {
     socket: Arc<Socket>,
@@ -23,26 +24,38 @@ pub struct Connection<'a> {
     port: u16,
 }
 
-pub fn connect(addr: &str, port: u16) -> Connection<>{
+pub fn connect(addr: &str, port: u16) -> Connection{
     //Socket Creation
-    let socket: Arc<Socket> = Arc::new(bind_to_address(&(addr.to_owned() + ":" + &port.to_string())));
+    let socket: Socket = bind_to_address(&(addr.to_owned() + ":" + &port.to_string()));
 
+    let arc_socket = Arc::new(socket.clone());
+    
     //Handshake
     if HOST {
-    
+        let mut message_buf: Vec<u8> = vec![0; 32];
+        let recv_values = recv(&(socket.clone()), &mut message_buf);
+        let msg = str::from_utf8(&message_buf).unwrap();
+
+        if msg != "0110" 
+        {
+        println!("Handshake Failed");
+        } 
+        else 
+        {
+            CONNECTED_ADDRS.lock().unwrap().push(recv_values.1);
+        }
     }
     else
     {
-        send_to(&socket, "0110", addr, port);
+        send_to(&(socket.clone()), "0110", addr, port);
     }
 
-    let socket_stable = Arc::clone(&socket);
+    let socket_stable = Arc::clone(&arc_socket);
 
     thread::spawn(move || {
         loop
         {
-            let mut init_buf: Vec<u8> = Vec::new();
-            init_buf.resize(32, 0);
+            let mut init_buf: Vec<u8> = vec![0; 32];
             recv(&socket_stable, &mut init_buf);
 
             let msg = str::from_utf8(&init_buf).unwrap();
@@ -71,7 +84,7 @@ pub fn connect(addr: &str, port: u16) -> Connection<>{
         }
     });
 
-    return Connection {socket: socket, addr: addr, port: port};
+    return Connection {socket: arc_socket, addr: addr, port: port};
 }
 
 pub fn send(connection: &Connection, addr: &str, msg: &str, headers: &[&str]) -> bool {

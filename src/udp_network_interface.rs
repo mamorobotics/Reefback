@@ -1,5 +1,6 @@
 use std::{net::UdpSocket};
 
+#[derive(Clone)]
 pub struct Socket {
     pub socket: UdpSocket,
 }
@@ -23,6 +24,7 @@ pub fn send_to(socket: &Socket, msg: &str, addr: &str, port: u16) -> bool {
     return sent == msg.as_bytes().len();
 }
 
-pub fn recv(socket: &Socket, buf: &mut Vec<u8>) {
-    socket.socket.recv_from(buf).unwrap();
+pub fn recv<'a>(socket: &'a Socket, buf: &'a mut Vec<u8>) -> (i32, String) {
+    let (num_bytes, src_addr) = socket.socket.recv_from(buf).unwrap();
+    return (num_bytes.try_into().unwrap(), src_addr.ip().to_string());
 }
