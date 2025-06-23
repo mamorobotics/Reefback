@@ -1,4 +1,4 @@
-mod network_interfaces;
+mod network_interface;
 mod network_manager;
 
 fn main() {
