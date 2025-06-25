@@ -18,23 +18,20 @@ const HOST: bool = cfg!(feature = "host");
 static FUNCT_MAP: Mutex<Vec<fn(&str)>> = Mutex::new(Vec::new());
 static CONNECTED_ADDRS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 
-pub trait Conn {
-    fn create_persistent_connection(&mut self) -> bool;
-    fn send(&self, addr: &str, msg: &str, headers: &[&str]) -> bool;
-}
-
 pub struct Connection<T: NetworkInterface + Send + Sync + Clone + 'static> {
     pub interface: T,
     pub addr: String,
     pub port: u16
 }
 
-impl<T: NetworkInterface + Send + Sync + Clone + 'static> Conn for Connection<T> {
-    fn create_persistent_connection(&mut self) -> bool {
+impl<T: NetworkInterface + Send + Sync + Clone + 'static> Connection<T> {
+    pub fn create_persistent_connection(&mut self) -> bool {
         //Socket Creation
+
         self.interface.bind_to_address(&(self.addr.to_owned() + ":" + &self.port.to_string()));
 
         //Handshake
+
         if HOST {
             let mut message_buf: Vec<u8> = vec![0; 32];
             let recv_values = self.interface.recv(&mut message_buf);
@@ -49,10 +46,13 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Conn for Connection<T>
             self.interface.send_to("0110", &self.addr, self.port);
         }
 
+        //Listening
+
         let interface_stable: Arc<T> = Arc::new(self.interface.clone());
 
         thread::spawn(move || {
-            loop {
+            let mut listening = true;
+            while listening {
                 let mut init_buf: Vec<u8> = vec![0; 32];
                 interface_stable.recv(&mut init_buf);
 
@@ -86,8 +86,14 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Conn for Connection<T>
                 let data: Vec<u8> = data_buf;
 
                 for head in (*headers).split("?") {
-                    let header_value = head.parse::<usize>().unwrap();
-                    FUNCT_MAP.lock().unwrap()[header_value](str::from_utf8(&data).unwrap());
+                    if head == "STOP" {
+                        listening = false;
+                    }
+                    else 
+                    {
+                        let header_value = head.parse::<usize>().unwrap();
+                        FUNCT_MAP.lock().unwrap()[header_value](str::from_utf8(&data).unwrap());
+                    }
                 }
             }
         });
@@ -95,8 +101,44 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Conn for Connection<T>
         return true;
     }
 
-    fn send(&self, addr: &str, msg: &str, headers: &[&str]) -> bool {
+    pub fn send_temporary_connection(&mut self, addr: &str, msg: &str, headers: &[&str]) -> bool {
+        //Socket Creation
+
+        self.interface.bind_to_address(&(self.addr.to_owned() + ":" + &self.port.to_string()));
+
+        //Handshake
+
+        if HOST {
+            let mut message_buf: Vec<u8> = vec![0; 32];
+            let recv_values = self.interface.recv(&mut message_buf);
+            let msg = str::from_utf8(&message_buf).unwrap();
+
+            if msg != "0110" {
+                println!("Handshake Failed");
+            } else {
+                CONNECTED_ADDRS.lock().unwrap().push(recv_values.1);
+            }
+        } else {
+            self.interface.send_to("0110", &self.addr, self.port);
+        }
+
         if !CONNECTED_ADDRS.lock().unwrap().contains(&(msg.to_owned())) {
+            return false;
+        }
+
+        //Sending
+
+        let sent = self.send(addr, msg, headers);
+        let stopped = self.send(addr, "", &["STOP"]);
+        return sent && stopped;
+    }
+
+    pub fn send(&self, addr: &str, msg: &str, headers: &[&str]) -> bool {
+        if !CONNECTED_ADDRS.lock().unwrap().contains(&(msg.to_owned())) {
+            return false;
+        }
+
+        if (msg.len().to_string() + "!" + &headers.join("?")).len() > 32 {
             return false;
         }
 
@@ -118,6 +160,10 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Conn for Connection<T>
 
         let msg_check: bool = sent;
         return pre_check && msg_check;
+    }
+
+    pub fn terminate_connection(&self, addr: &str) -> bool{
+        return self.send(addr, "", &["STOP"]);
     }
 }
 
