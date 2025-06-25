@@ -21,14 +21,15 @@ static CONNECTED_ADDRS: Mutex<Vec<String>> = Mutex::new(Vec::new());
 pub struct Connection<T: NetworkInterface + Send + Sync + Clone + 'static> {
     pub interface: T,
     pub addr: String,
-    pub port: u16
+    pub port: u16,
 }
 
 impl<T: NetworkInterface + Send + Sync + Clone + 'static> Connection<T> {
     pub fn create_persistent_connection(&mut self) -> bool {
         //Socket Creation
 
-        self.interface.bind_to_address(&(self.addr.to_owned() + ":" + &self.port.to_string()));
+        self.interface
+            .bind_to_address(&(self.addr.to_owned() + ":" + &self.port.to_string()));
 
         //Handshake
 
@@ -88,23 +89,22 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Connection<T> {
                 for head in (*headers).split("?") {
                     if head == "STOP" {
                         listening = false;
-                    }
-                    else 
-                    {
+                    } else {
                         let header_value = head.parse::<usize>().unwrap();
                         FUNCT_MAP.lock().unwrap()[header_value](str::from_utf8(&data).unwrap());
                     }
                 }
             }
         });
-        
+
         return true;
     }
 
     pub fn send_temporary_connection(&mut self, addr: &str, msg: &str, headers: &[&str]) -> bool {
         //Socket Creation
 
-        self.interface.bind_to_address(&(self.addr.to_owned() + ":" + &self.port.to_string()));
+        self.interface
+            .bind_to_address(&(self.addr.to_owned() + ":" + &self.port.to_string()));
 
         //Handshake
 
@@ -162,7 +162,7 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Connection<T> {
         return pre_check && msg_check;
     }
 
-    pub fn terminate_connection(&self, addr: &str) -> bool{
+    pub fn terminate_connection(&self, addr: &str) -> bool {
         return self.send(addr, "", &["STOP"]);
     }
 }

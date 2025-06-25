@@ -10,19 +10,28 @@ pub trait NetworkInterface {
 #[cfg(feature = "udp-networking")]
 #[derive(Clone)]
 pub struct UdpNetworkInterface {
-    pub socket: Option<Arc<UdpSocket>>
+    pub socket: Option<Arc<UdpSocket>>,
 }
 
 #[cfg(feature = "sim-networking")]
 #[derive(Clone)]
 pub struct SimNetworkInterface {
-    pub socket: String
+    pub socket: String,
 }
 
 #[cfg(feature = "udp-networking")]
 impl UdpNetworkInterface {
     pub fn new() -> Self {
         Self { socket: None }
+    }
+}
+
+#[cfg(feature = "sim-networking")]
+impl SimNetworkInterface {
+    pub fn new() -> Self {
+        Self {
+            socket: "".to_owned(),
+        }
     }
 }
 
@@ -35,7 +44,7 @@ impl NetworkInterface for UdpNetworkInterface {
     fn send_to(&self, msg: &str, addr: &str, port: u16) -> bool {
         let socket = match &self.socket {
             Some(s) => s,
-            None => return false, // or panic with a helpful message
+            None => panic!("Socket not initialized. Call bind_to_address first."),
         };
 
         let mut sent = 0;
@@ -64,12 +73,11 @@ impl NetworkInterface for UdpNetworkInterface {
         let (num_bytes, src_addr) = socket.recv_from(buf).unwrap();
         return (num_bytes.try_into().unwrap(), src_addr.ip().to_string());
     }
-
 }
 
 #[cfg(feature = "sim-networking")]
 impl NetworkInterface for SimNetworkInterface {
-    fn bind_to_address(&self, addr: &str) {
+    fn bind_to_address(&mut self, addr: &str) {
         self.socket = addr.to_owned();
     }
 

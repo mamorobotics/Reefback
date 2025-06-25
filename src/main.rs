@@ -5,10 +5,10 @@ mod network_manager;
 
 fn main() {
     //Create a connection type
-    let mut connection: Connection<UdpNetworkInterface> = Connection { 
-        interface: UdpNetworkInterface::new(),
+    let mut connection: Connection<SimNetworkInterface> = Connection {
+        interface: SimNetworkInterface::new(),
         addr: "192.168.1.2".to_owned(),
-        port: 8080
+        port: 8080,
     };
 
     //Do stuff with the connection
