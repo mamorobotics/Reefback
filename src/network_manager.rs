@@ -7,12 +7,6 @@ use std::{
 
 use crate::network_interface::NetworkInterface;
 
-#[cfg(feature = "udp-networking")]
-static MAX_LEN: usize = 65500;
-
-#[cfg(feature = "sim-networking")]
-static MAX_LEN: usize = i32::MAX as usize;
-
 const HOST: bool = cfg!(feature = "host");
 
 static FUNCT_MAP: Mutex<Vec<fn(&str)>> = Mutex::new(Vec::new());
@@ -67,17 +61,18 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Connection<T> {
                 let mut total_size: i32 = 0;
                 while total_size < size - 1 {
                     let mut temp_buf: Vec<u8> = Vec::new();
+                    let max_len: usize = interface_stable.max_file_len();
                     temp_buf.resize(
-                        if (size - total_size) > (MAX_LEN as i32) {
-                            MAX_LEN
+                        if (size - total_size) > (max_len as i32) {
+                            max_len
                         } else {
                             (size - total_size) as usize
                         },
                         0,
                     );
                     interface_stable.recv(&mut temp_buf);
-                    total_size += if (size - total_size) > (MAX_LEN as i32) {
-                        MAX_LEN as i32
+                    total_size += if (size - total_size) > (max_len as i32) {
+                        max_len as i32
                     } else {
                         size - total_size
                     };
@@ -143,15 +138,17 @@ impl<T: NetworkInterface + Send + Sync + Clone + 'static> Connection<T> {
         }
 
         let mut pre_msg: String = msg.len().to_string() + "!" + &headers.join("?");
-        let pre_length = pre_msg.len();
+        let pre_length: usize = pre_msg.len();
         pre_msg = pre_msg + &repeat(" ").take(32 - pre_length).collect::<String>();
         let pre_check: bool = self.interface.send_to(&pre_msg, addr, self.port);
 
-        let mut sent = true;
+        let mut sent: bool = true;
         let mut msg_data: String = (*msg).to_string();
-        while msg_data.len() > MAX_LEN {
-            let temp = msg_data[..MAX_LEN].to_string();
-            msg_data = msg_data[MAX_LEN..].to_string();
+        let max_len: usize = self.interface.max_file_len();
+
+        while msg_data.len() > max_len {
+            let temp = msg_data[..max_len].to_string();
+            msg_data = msg_data[max_len..].to_string();
             sent &= self.interface.send_to(&temp, addr, self.port)
         }
         if msg_data.len() != 0 {

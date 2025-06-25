@@ -9,4 +9,4 @@ edition = "2024"
 udp-networking = []
 sim-networking = []
 host = []
-default = ["sim-networking"]
+default = ["sim-networking", "udp-networking"]

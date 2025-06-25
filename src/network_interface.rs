@@ -5,6 +5,7 @@ pub trait NetworkInterface {
     fn bind_to_address(&mut self, addr: &str);
     fn send_to(&self, msg: &str, addr: &str, port: u16) -> bool;
     fn recv(&self, buf: &mut Vec<u8>) -> (i32, String);
+    fn max_file_len(&self) -> usize;
 }
 
 #[cfg(feature = "udp-networking")]
@@ -73,6 +74,10 @@ impl NetworkInterface for UdpNetworkInterface {
         let (num_bytes, src_addr) = socket.recv_from(buf).unwrap();
         return (num_bytes.try_into().unwrap(), src_addr.ip().to_string());
     }
+
+    fn max_file_len(&self) -> usize {
+        return 65500;
+    }
 }
 
 #[cfg(feature = "sim-networking")]
@@ -92,5 +97,9 @@ impl NetworkInterface for SimNetworkInterface {
         buf.extend_from_slice(&msg);
 
         return (msg.len().try_into().unwrap(), "TEST ADDR".to_owned());
+    }
+
+    fn max_file_len(&self) -> usize {
+        return i32::MAX as usize;
     }
 }
