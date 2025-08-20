@@ -4,10 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-glium = { version = "0.35.0", default-features = true }
-imgui-glium-renderer = { version = "0.13.0", git = "https://github.com/imgui-rs/imgui-glium-renderer" }
-imgui = { git = "https://github.com/imgui-rs/imgui-rs", version = "0.12", features = [] }
-imgui-winit-support = { version = "0.13", git = "https://github.com/imgui-rs/imgui-winit-support" }
+glow = "0.14.2"
+glutin = "0.32.3"
+glutin-winit = "0.5.0"
+imgui = { version = "0.12", features = ["docking"] }
+imgui-glow-renderer = "0.13.0"
+imgui-winit-support = "0.13.0"
+raw-window-handle = "0.6.2"
+winit = "0.30.12"
+
 
 [features]
 udp-networking = []
