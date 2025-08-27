@@ -18,7 +18,32 @@ use imgui_winit_support::{
 };
 use raw_window_handle::HasWindowHandle;
 
-pub fn create_ui(draw_ui: fn(&mut imgui::Ui, args: Arc<Mutex<HashMap<String, Mutex<String>>>>), args: Arc<Mutex<HashMap<String, Mutex<String>>>>) {
+#[derive(Clone)]
+pub struct UiArguments {
+    args: Arc<Mutex<HashMap<String, Mutex<String>>>>
+}
+
+impl UiArguments {
+    pub fn get_argument_value(&self, key: &str) -> String {
+        let binding = self.args.lock().unwrap();
+        let value = &*binding.get(key).unwrap().lock().unwrap();
+        return value.to_string();
+    }
+
+    pub fn argument_builder(arguments: &[(&str, &str)]) -> UiArguments {
+        let args: Mutex<HashMap<String, Mutex<String>>> = Mutex::new(HashMap::new());
+
+        for arg in arguments {
+            args.lock().unwrap().insert(arg.0.to_owned(), Mutex::new(arg.1.to_owned()));
+        }
+        let args_shared = Arc::new(args);
+        let argument_struct = UiArguments {args: args_shared};
+
+        return argument_struct;
+    }
+}
+
+pub fn create_ui(draw_ui: fn(&mut imgui::Ui, args: UiArguments), args: UiArguments) {
     let (event_loop, window, surface, context) = create_window();
     let (mut winit_platform, mut imgui_context) = imgui_init(&window);
 
