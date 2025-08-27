@@ -1,3 +1,5 @@
+use std::{collections::HashMap, sync::{Arc, Mutex}};
+
 use crate::{network_interface::*, network_manager::*};
 use imgui::*;
 
@@ -7,13 +9,17 @@ mod ui_manager;
 
 fn main() {
     //Initialize the UI
-    ui_manager::create_ui(|ui: &mut Ui| {
+    let args: Mutex<HashMap<String, Mutex<String>>> = Mutex::new(HashMap::new());
+    args.lock().unwrap().insert("text".to_owned(), Mutex::new("Wassup?".to_owned()));
+    let args_shared = Arc::new(args);
+
+    ui_manager::create_ui(|ui: &mut Ui, args| {
         ui.window("Hello").size([300.0, 100.0], imgui::Condition::FirstUseEver).build(
             || {
-                ui.text("Hello!")
+                ui.text(&*args.lock().unwrap().get("text").unwrap().lock().unwrap());
             }
         );
-    });
+    }, args_shared);
 
     //Create a connection type
     let mut connection: Connection<SimNetworkInterface> = Connection {

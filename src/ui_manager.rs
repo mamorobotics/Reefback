@@ -1,4 +1,4 @@
-use std::{num::NonZeroU32, thread, time::Instant};
+use std::{collections::HashMap, num::NonZeroU32, sync::{Arc, Mutex}, time::Instant};
 
 use glow::HasContext;
 use glutin::{
@@ -18,7 +18,7 @@ use imgui_winit_support::{
 };
 use raw_window_handle::HasWindowHandle;
 
-pub fn create_ui(draw_ui: fn(&mut imgui::Ui)) {
+pub fn create_ui(draw_ui: fn(&mut imgui::Ui, args: Arc<Mutex<HashMap<String, Mutex<String>>>>), args: Arc<Mutex<HashMap<String, Mutex<String>>>>) {
     let (event_loop, window, surface, context) = create_window();
     let (mut winit_platform, mut imgui_context) = imgui_init(&window);
 
@@ -55,7 +55,7 @@ pub fn create_ui(draw_ui: fn(&mut imgui::Ui)) {
                     let ui = imgui_context.new_frame();
                     ui.dockspace_over_main_viewport();
 
-                    draw_ui(ui);
+                    draw_ui(ui, args.clone());
                     
                     winit_platform.prepare_render(ui, &window);
                     let draw_data = imgui_context.render();
